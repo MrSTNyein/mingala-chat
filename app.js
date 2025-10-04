@@ -1,5 +1,4 @@
-// app.js
-
+// app.js v2.0
 document.addEventListener('DOMContentLoaded', () => {
     // --- 1. SUPABASE SETUP ---
     const supabaseUrl = 'https://tzetdtcpxsqqwccymsol.supabase.co';
@@ -11,62 +10,145 @@ document.addEventListener('DOMContentLoaded', () => {
     const appContainer = document.getElementById('app-container');
     const loginOverlay = document.getElementById('login-overlay');
     const btnGoogleLogin = document.getElementById('btn-google-login');
+    const btnGuestLogin = document.getElementById('btn-guest-login');
     const btnLogout = document.getElementById('btn-logout');
+    const btnNewChat = document.getElementById('btn-new-chat');
     const userInfo = document.getElementById('user-info');
     const userPic = document.getElementById('user-pic');
     const userName = document.getElementById('user-name');
+    const chatList = document.getElementById('chat-list');
     const chatWindow = document.getElementById('chat-window');
+    const chatStarter = document.getElementById('chat-starter');
     const messageInput = document.getElementById('message-input');
     const sendButton = document.getElementById('send-button');
     const btnTheme = document.getElementById('btn-theme');
-    const chatStarter = document.getElementById('chat-starter');
 
     // --- 3. APP STATE ---
     let currentUser = null;
-    let messagesHistory = [];
+    let currentChatId = null;
     let messageSubscription = null;
 
     // --- 4. AUTHENTICATION ---
-    const signInWithGoogle = async () => {
-        await supabaseClient.auth.signInWithOAuth({ provider: 'google' });
-    };
-    const signOut = async () => {
-        await supabaseClient.auth.signOut();
-        window.location.reload();
-    };
+    const signInWithGoogle = async () => { await supabaseClient.auth.signInWithOAuth({ provider: 'google' }); };
+    const signInAsGuest = async () => { await supabaseClient.auth.signInAnonymously(); };
+    const signOut = async () => { await supabaseClient.auth.signOut(); window.location.reload(); };
+
     supabaseClient.auth.onAuthStateChange(async (event, session) => {
         currentUser = session?.user || null;
         await updateUI();
     });
 
-    // --- 5. UI MANAGEMENT ---
+    // --- 5. UI MANAGEMENT & DATA FETCHING ---
     const updateUI = async () => {
         if (currentUser) {
             appContainer.classList.remove('hidden');
             loginOverlay.classList.add('hidden');
             btnLogout.classList.remove('hidden');
             userInfo.classList.remove('hidden');
-            userPic.src = currentUser.user_metadata.avatar_url;
-            userName.textContent = currentUser.user_metadata.full_name;
             messageInput.disabled = false;
-            sendButton.disabled = messageInput.value.trim() === '';
-            await fetchMessages();
-            subscribeToMessages();
+            
+            if (currentUser.is_anonymous) {
+                userPic.style.display = 'none';
+                userName.textContent = 'Guest User';
+            } else {
+                userPic.style.display = 'block';
+                userPic.src = currentUser.user_metadata.avatar_url;
+                userName.textContent = currentUser.user_metadata.full_name;
+            }
+            await loadChatSessions();
+            startNewChat(); // Start with a blank slate
         } else {
             appContainer.classList.add('hidden');
             loginOverlay.classList.remove('hidden');
-            messageInput.disabled = true;
-            sendButton.disabled = true;
-            if (messageSubscription) {
-                messageSubscription.unsubscribe();
-            }
         }
     };
 
-    // --- 6. CHAT & AI LOGIC ---
+    const loadChatSessions = async () => {
+        const { data, error } = await supabaseClient.from('chats').select('*').order('created_at', { ascending: false });
+        if (error) { console.error("Error loading chats:", error); return; }
+        
+        chatList.innerHTML = '';
+        data.forEach(chat => {
+            const chatEl = document.createElement('div');
+            chatEl.className = 'chat-list-item';
+            chatEl.textContent = chat.title || 'New Chat';
+            chatEl.dataset.id = chat.id;
+            chatEl.addEventListener('click', () => loadChat(chat.id));
+            chatList.appendChild(chatEl);
+        });
+    };
+
+    // --- 6. CORE CHAT LOGIC ---
+    const startNewChat = () => {
+        currentChatId = null;
+        if (messageSubscription) messageSubscription.unsubscribe();
+        chatWindow.innerHTML = '';
+        chatWindow.appendChild(chatStarter);
+        chatStarter.classList.remove('hidden');
+        document.querySelectorAll('.chat-list-item.active').forEach(el => el.classList.remove('active'));
+        messageInput.value = '';
+        messageInput.focus();
+    };
+
+    const loadChat = async (chatId) => {
+        if (currentChatId === chatId) return;
+        currentChatId = chatId;
+
+        chatStarter.classList.add('hidden');
+        chatWindow.innerHTML = '<div class="loading">Loading chat...</div>';
+
+        const { data, error } = await supabaseClient.from('messages').select('*').eq('chat_id', chatId).order('created_at');
+        if (error) { console.error("Error loading messages:", error); return; }
+
+        chatWindow.innerHTML = ''; // Clear loading message
+        data.forEach(renderMessage);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+
+        // Highlight active chat in sidebar
+        document.querySelectorAll('.chat-list-item').forEach(el => {
+            el.classList.toggle('active', el.dataset.id === chatId);
+        });
+        
+        subscribeToMessages(chatId);
+    };
+
+    const sendMessage = async () => {
+        const text = messageInput.value.trim();
+        if (text.length === 0 || !currentUser) return;
+
+        chatStarter.classList.add('hidden');
+        
+        // Optimistic rendering for instant feedback
+        const userMessage = { text, sender_id: currentUser.id };
+        renderMessage(userMessage);
+        
+        messageInput.value = '';
+        messageInput.style.height = 'auto';
+        sendButton.disabled = true;
+
+        let chatId = currentChatId;
+        
+        // If this is the first message of a new chat, create the chat first
+        if (!chatId) {
+            const { data, error } = await supabaseClient.from('chats').insert({ title: text.substring(0, 40) }).select().single();
+            if (error) { console.error("Error creating chat:", error); return; }
+            chatId = data.id;
+            currentChatId = chatId; // Set the current chat ID
+            await loadChatSessions(); // Refresh sidebar
+            document.querySelector(`.chat-list-item[data-id="${chatId}"]`)?.classList.add('active');
+            subscribeToMessages(chatId); // Subscribe to the new chat
+        }
+
+        // Save the message to the database
+        const { error } = await supabaseClient.from('messages').insert({ chat_id: chatId, text, sender_id: currentUser.id });
+        if (error) console.error("Error saving message:", error);
+
+        // Call the AI function
+        // try { ... } catch { ... } logic will go here
+    };
+
     const renderMessage = (message) => {
-        if (!message || !message.text) return;
-        const senderClass = currentUser && message.sender_id === currentUser.id ? 'user' : 'bot';
+        const senderClass = (currentUser && message.sender_id === currentUser.id) || (currentUser.is_anonymous && message.sender_id === currentUser.id) ? 'user' : 'bot';
         const messageRow = document.createElement('div');
         messageRow.className = `chat-row ${senderClass}`;
         const bubble = document.createElement('div');
@@ -74,88 +156,29 @@ document.addEventListener('DOMContentLoaded', () => {
         bubble.innerHTML = marked.parse(message.text);
         bubble.querySelectorAll('pre code').forEach(hljs.highlightElement);
         messageRow.appendChild(bubble);
-        // Make sure chat starter is not in the way
-        if(document.getElementById('chat-starter')) {
-            chatWindow.insertBefore(messageRow, chatStarter);
-        } else {
-            chatWindow.appendChild(messageRow);
-        }
+        chatWindow.appendChild(messageRow);
         chatWindow.scrollTop = chatWindow.scrollHeight;
     };
-
-    const fetchMessages = async () => {
-        const { data, error } = await supabaseClient.from('messages').select('*').order('created_at', { ascending: true });
-        if (error) return console.error('Error fetching messages:', error);
+    
+    const subscribeToMessages = (chatId) => {
+        if (messageSubscription) messageSubscription.unsubscribe();
         
-        // Show welcome message if there are no past messages
-        if (data.length === 0) {
-            chatWindow.innerHTML = ''; // Ensure it's clear
-            chatWindow.appendChild(chatStarter);
-            chatStarter.classList.remove('hidden');
-        } else {
-            chatStarter.classList.add('hidden');
-            chatWindow.innerHTML = ''; // Clear window before rendering
-            data.forEach(renderMessage);
-            chatWindow.appendChild(chatStarter); // keep it in the DOM but hidden
-        }
-
-        messagesHistory = data.map(msg => ({
-            role: (currentUser && msg.sender_id === currentUser.id) ? 'user' : 'assistant',
-            content: msg.text
-        }));
-    };
-
-    const sendMessage = async (textOverride) => {
-        const text = textOverride || messageInput.value.trim();
-        if (text.length === 0 || !currentUser) return;
-        
-        chatStarter.classList.add('hidden');
-        const userMessage = { text, sender_id: currentUser.id };
-        
-        // Render the user's message immediately for a great UX.
-        renderMessage(userMessage);
-        
-        if (!textOverride) {
-            messageInput.value = '';
-        }
-        sendButton.disabled = true;
-        
-        await supabaseClient.from('messages').insert([userMessage]);
-        messagesHistory.push({ role: 'user', content: text });
-
-        try {
-            const lastMessages = messagesHistory.slice(-6);
-            const { data, error } = await supabaseClient.functions.invoke('get-ai-response', {
-                body: { messages: lastMessages },
-            });
-            if (error) throw error;
-        } catch (error) {
-            console.error('Error calling Edge Function:', error);
-            const errorMessage = { text: "Sorry, the AI assistant is not available right now.", sender_id: 'bot' };
-            await supabaseClient.from('messages').insert([errorMessage]);
-        }
-    };
-
-    const subscribeToMessages = () => {
-        if (messageSubscription) {
-             messageSubscription.unsubscribe();
-        }
-        messageSubscription = supabaseClient.channel('public:messages')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-                // Only render if the message isn't from the current user,
-                // because we already rendered it optimistically.
+        messageSubscription = supabaseClient.channel(`chat:${chatId}`)
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` }, payload => {
                 if (payload.new.sender_id !== currentUser.id) {
                     renderMessage(payload.new);
                 }
             })
             .subscribe();
     };
-    
+
     // --- 7. EVENT LISTENERS ---
     btnGoogleLogin.addEventListener('click', signInWithGoogle);
+    btnGuestLogin.addEventListener('click', signInAsGuest);
     btnLogout.addEventListener('click', signOut);
-    sendButton.addEventListener('click', () => sendMessage());
-    
+    btnNewChat.addEventListener('click', startNewChat);
+    sendButton.addEventListener('click', sendMessage);
+
     messageInput.addEventListener('keydown', e => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -167,12 +190,6 @@ document.addEventListener('DOMContentLoaded', () => {
         sendButton.disabled = messageInput.value.trim().length === 0;
         messageInput.style.height = 'auto';
         messageInput.style.height = `${messageInput.scrollHeight}px`;
-    });
-    
-    document.querySelectorAll('.suggestion').forEach(button => {
-        button.addEventListener('click', () => {
-            sendMessage(button.textContent);
-        });
     });
     
     // --- 8. THEME SWITCHER ---
