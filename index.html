@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Mingala — Chat App v2.0</title>
+    <title>Mingala — Chat App v3.0</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -12,6 +12,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 </head>
 <body>
+<div class="background-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+</div>
 
 <div id="app-container" class="hidden">
     <header>
@@ -22,7 +26,7 @@
                 <circle cx="39" cy="51" r="5" fill="white"/><circle cx="61" cy="51" r="5" fill="white"/>
                 <path d="M45.5 68C45.5 67.1716 46.1716 66.5 47 66.5H53C53.8284 66.5 54.5 67.1716 54.5 68C54.5 69.933 52.933 71.5 51 71.5H49C47.067 71.5 45.5 69.933 45.5 68Z" fill="white"/>
                 <path d="M32 36L22 26" stroke="white" stroke-width="4" stroke-linecap="round"/><path d="M68 36L78 26" stroke="white" stroke-width="4" stroke-linecap="round"/>
-                <defs><linearGradient id="paint0_linear_header" x1="2" y1="2" x2="98" y2="98" gradientUnits="userSpaceOnUse"><stop stop-color="#22d3ee"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs>
+                <defs><linearGradient id="paint0_linear_header" x1="2" y1="2" x2="98" y2="98" gradientUnits="userSpaceOnUse"><stop stop-color="#10b981"/><stop offset="1" stop-color="#059669"/></linearGradient></defs>
             </svg>
             <div class="title">Mingala Chat</div>
         </div>
@@ -41,21 +45,20 @@
             <div class="sidebar-header">
                 <button id="btn-new-chat" class="btn primary new-chat-btn">+ New Chat</button>
             </div>
-            <div id="chat-list" class="chat-list">
-                </div>
+            <div id="chat-list" class="chat-list"></div>
         </aside>
 
         <main class="main-content">
             <div id="chat-window" class="chat-log">
-                <div id="chat-starter">
+                <div id="chat-starter" style="display: none;">
                     <div class="welcome-logo">
                         <svg class="logo large" width="80" height="80" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="50" cy="50" r="48" fill="url(#paint0_linear_starter)"/>
+                             <circle cx="50" cy="50" r="48" fill="url(#paint0_linear_starter)"/>
                             <path d="M67.5 52C67.5 59.4558 60.9558 66 53.5 66H46.5C39.0442 66 32.5 59.4558 32.5 52V49C32.5 41.5442 39.0442 35 46.5 35H53.5C60.9558 35 67.5 41.5442 67.5 49V52Z" fill="white" fill-opacity="0.2"/>
                             <circle cx="39" cy="51" r="5" fill="white"/><circle cx="61" cy="51" r="5" fill="white"/>
                             <path d="M45.5 68C45.5 67.1716 46.1716 66.5 47 66.5H53C53.8284 66.5 54.5 67.1716 54.5 68C54.5 69.933 52.933 71.5 51 71.5H49C47.067 71.5 45.5 69.933 45.5 68Z" fill="white"/>
                             <path d="M32 36L22 26" stroke="white" stroke-width="4" stroke-linecap="round"/><path d="M68 36L78 26" stroke="white" stroke-width="4" stroke-linecap="round"/>
-                            <defs><linearGradient id="paint0_linear_starter" x1="2" y1="2" x2="98" y2="98" gradientUnits="userSpaceOnUse"><stop stop-color="#22d3ee"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs>
+                            <defs><linearGradient id="paint0_linear_starter" x1="2" y1="2" x2="98" y2="98" gradientUnits="userSpaceOnUse"><stop stop-color="#10b981"/><stop offset="1" stop-color="#059669"/></linearGradient></defs>
                         </svg>
                     </div>
                     <h2>How can I help you today?</h2>
@@ -80,7 +83,7 @@
             <circle cx="39" cy="51" r="5" fill="white"/><circle cx="61" cy="51" r="5" fill="white"/>
             <path d="M45.5 68C45.5 67.1716 46.1716 66.5 47 66.5H53C53.8284 66.5 54.5 67.1716 54.5 68C54.5 69.933 52.933 71.5 51 71.5H49C47.067 71.5 45.5 69.933 45.5 68Z" fill="white"/>
             <path d="M32 36L22 26" stroke="white" stroke-width="4" stroke-linecap="round"/><path d="M68 36L78 26" stroke="white" stroke-width="4" stroke-linecap="round"/>
-            <defs><linearGradient id="paint0_linear_login" x1="2" y1="2" x2="98" y2="98" gradientUnits="userSpaceOnUse"><stop stop-color="#22d3ee"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs>
+            <defs><linearGradient id="paint0_linear_login" x1="2" y1="2" x2="98" y2="98" gradientUnits="userSpaceOnUse"><stop stop-color="#10b981"/><stop offset="1" stop-color="#059669"/></linearGradient></defs>
         </svg>
         <h2>Welcome to Mingala</h2>
         <p>Your personal AI assistant. Log in to start chatting.</p>
@@ -100,4 +103,3 @@
 
 </body>
 </html>
-
