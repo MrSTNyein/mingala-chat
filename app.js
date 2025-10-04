@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const messageInput = document.getElementById('message-input');
     const sendButton = document.getElementById('send-button');
     const btnTheme = document.getElementById('btn-theme');
+    const chatStarter = document.getElementById('chat-starter');
 
     // --- 3. APP STATE ---
     let currentUser = null;
@@ -73,48 +74,63 @@ document.addEventListener('DOMContentLoaded', () => {
         bubble.innerHTML = marked.parse(message.text);
         bubble.querySelectorAll('pre code').forEach(hljs.highlightElement);
         messageRow.appendChild(bubble);
-        chatWindow.appendChild(messageRow);
+        // Make sure chat starter is not in the way
+        if(document.getElementById('chat-starter')) {
+            chatWindow.insertBefore(messageRow, chatStarter);
+        } else {
+            chatWindow.appendChild(messageRow);
+        }
         chatWindow.scrollTop = chatWindow.scrollHeight;
     };
 
     const fetchMessages = async () => {
         const { data, error } = await supabaseClient.from('messages').select('*').order('created_at', { ascending: true });
         if (error) return console.error('Error fetching messages:', error);
-        chatWindow.innerHTML = '';
-        data.forEach(renderMessage);
+        
+        // Show welcome message if there are no past messages
+        if (data.length === 0) {
+            chatWindow.innerHTML = ''; // Ensure it's clear
+            chatWindow.appendChild(chatStarter);
+            chatStarter.classList.remove('hidden');
+        } else {
+            chatStarter.classList.add('hidden');
+            chatWindow.innerHTML = ''; // Clear window before rendering
+            data.forEach(renderMessage);
+            chatWindow.appendChild(chatStarter); // keep it in the DOM but hidden
+        }
+
         messagesHistory = data.map(msg => ({
             role: (currentUser && msg.sender_id === currentUser.id) ? 'user' : 'assistant',
             content: msg.text
         }));
     };
 
-    const sendMessage = async () => {
-        const text = messageInput.value.trim();
+    const sendMessage = async (textOverride) => {
+        const text = textOverride || messageInput.value.trim();
         if (text.length === 0 || !currentUser) return;
-
+        
+        chatStarter.classList.add('hidden');
         const userMessage = { text, sender_id: currentUser.id };
-        messageInput.value = '';
+        
+        // Render the user's message immediately for a great UX.
+        renderMessage(userMessage);
+        
+        if (!textOverride) {
+            messageInput.value = '';
+        }
         sendButton.disabled = true;
         
-        // Save user message. The subscription will render it.
         await supabaseClient.from('messages').insert([userMessage]);
         messagesHistory.push({ role: 'user', content: text });
 
-        // Call the AI function
         try {
             const lastMessages = messagesHistory.slice(-6);
             const { data, error } = await supabaseClient.functions.invoke('get-ai-response', {
                 body: { messages: lastMessages },
             });
             if (error) throw error;
-            
-            // The edge function should save the bot's reply.
-            // Our real-time subscription will pick it up and render it automatically.
-
         } catch (error) {
             console.error('Error calling Edge Function:', error);
-            // **THIS IS THE UPDATED PART**
-            // If the AI fails, we save an error message to the DB so the user sees it.
             const errorMessage = { text: "Sorry, the AI assistant is not available right now.", sender_id: 'bot' };
             await supabaseClient.from('messages').insert([errorMessage]);
         }
@@ -126,7 +142,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         messageSubscription = supabaseClient.channel('public:messages')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-                renderMessage(payload.new);
+                // Only render if the message isn't from the current user,
+                // because we already rendered it optimistically.
+                if (payload.new.sender_id !== currentUser.id) {
+                    renderMessage(payload.new);
+                }
             })
             .subscribe();
     };
@@ -134,28 +154,31 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 7. EVENT LISTENERS ---
     btnGoogleLogin.addEventListener('click', signInWithGoogle);
     btnLogout.addEventListener('click', signOut);
-    sendButton.addEventListener('click', sendMessage);
+    sendButton.addEventListener('click', () => sendMessage());
+    
     messageInput.addEventListener('keydown', e => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             sendMessage();
         }
     });
+
     messageInput.addEventListener('input', () => {
         sendButton.disabled = messageInput.value.trim().length === 0;
         messageInput.style.height = 'auto';
         messageInput.style.height = `${messageInput.scrollHeight}px`;
     });
     
+    document.querySelectorAll('.suggestion').forEach(button => {
+        button.addEventListener('click', () => {
+            sendMessage(button.textContent);
+        });
+    });
+    
     // --- 8. THEME SWITCHER ---
     const applyTheme = (theme) => {
-        if (theme === 'light') {
-            document.body.classList.add('light');
-            btnTheme.textContent = 'Light';
-        } else {
-            document.body.classList.remove('light');
-            btnTheme.textContent = 'Dark';
-        }
+        document.body.classList.toggle('light', theme === 'light');
+        btnTheme.textContent = theme === 'light' ? 'Light' : 'Dark';
     };
     btnTheme.addEventListener('click', () => {
         const newTheme = document.body.classList.contains('light') ? 'dark' : 'light';
