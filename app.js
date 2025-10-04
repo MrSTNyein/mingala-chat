@@ -1,11 +1,12 @@
-// app.js v2.1 (Bug Fixes & Stability Improvements)
-
+// app.js v3.0 (Simplified, Rewritten & Logged)
 document.addEventListener('DOMContentLoaded', () => {
     // --- 1. SUPABASE SETUP ---
     const supabaseUrl = 'https://tzetdtcpxsqqwccymsol.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR6ZXRkdGNweHNxcXdjY3ltc29sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1Nzg5NDgsImV4cCI6MjA3NTE1NDk0OH0.uJkvrf5z76nqunfZR5sx0P3WdVAIgbqb_c-ByxMelCc';
     const { createClient } = supabase;
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    console.log("App initialized. Waiting for user state.");
 
     // --- 2. DOM ELEMENTS ---
     const appContainer = document.getElementById('app-container');
@@ -33,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const clearChatWindow = () => {
         const messages = chatWindow.querySelectorAll('.chat-row');
         messages.forEach(msg => msg.remove());
+        console.log("Chat window cleared of messages.");
     };
 
     // --- 5. AUTHENTICATION ---
@@ -52,6 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 6. UI MANAGEMENT & DATA FETCHING ---
     const updateUI = async () => {
         if (currentUser) {
+            console.log("User detected. Updating UI for logged-in state.");
             appContainer.classList.remove('hidden');
             loginOverlay.classList.add('hidden');
             btnLogout.classList.remove('hidden');
@@ -59,9 +62,11 @@ document.addEventListener('DOMContentLoaded', () => {
             messageInput.disabled = false;
             
             if (currentUser.is_anonymous) {
+                console.log("User is a guest:", currentUser.id);
                 userPic.style.display = 'none';
                 userName.textContent = 'Guest User';
             } else {
+                console.log("User is signed in with Google:", currentUser.email);
                 userPic.style.display = 'block';
                 userPic.src = currentUser.user_metadata.avatar_url;
                 userName.textContent = currentUser.user_metadata.full_name;
@@ -69,12 +74,14 @@ document.addEventListener('DOMContentLoaded', () => {
             await loadChatSessions();
             startNewChat();
         } else {
+            console.log("No user found. Showing login screen.");
             appContainer.classList.add('hidden');
             loginOverlay.classList.remove('hidden');
         }
     };
 
     const loadChatSessions = async () => {
+        console.log("Loading chat sessions from database...");
         const { data, error } = await supabaseClient.from('chats').select('*').order('created_at', { ascending: false });
         if (error) { console.error("Error loading chats:", error); return; }
         
@@ -87,30 +94,34 @@ document.addEventListener('DOMContentLoaded', () => {
             chatEl.addEventListener('click', () => loadChat(chat.id));
             chatList.appendChild(chatEl);
         });
+        console.log(`Loaded ${data.length} chat sessions.`);
     };
 
     // --- 7. CORE CHAT LOGIC ---
     const startNewChat = () => {
+        console.log("Starting a new chat view.");
         currentChatId = null;
         if (messageSubscription) messageSubscription.unsubscribe();
         clearChatWindow();
-        chatStarter.classList.remove('hidden');
+        chatStarter.style.display = 'flex'; // Use style to show
         document.querySelectorAll('.chat-list-item.active').forEach(el => el.classList.remove('active'));
         messageInput.value = '';
         messageInput.focus();
     };
 
     const loadChat = async (chatId) => {
+        console.log(`Loading chat with ID: ${chatId}`);
         if (currentChatId === chatId) return;
         currentChatId = chatId;
 
-        chatStarter.classList.add('hidden');
+        chatStarter.style.display = 'none'; // Use style to hide
         clearChatWindow();
         
         const { data, error } = await supabaseClient.from('messages').select('*').eq('chat_id', chatId).order('created_at');
         if (error) { console.error("Error loading messages:", error); return; }
 
         data.forEach(renderMessage);
+        console.log(`Loaded ${data.length} messages.`);
 
         document.querySelectorAll('.chat-list-item').forEach(el => {
             el.classList.toggle('active', el.dataset.id === chatId);
@@ -123,9 +134,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const text = messageInput.value.trim();
         if (text.length === 0 || !currentUser) return;
 
-        chatStarter.classList.add('hidden');
+        console.log("Attempting to send message:", text);
+        chatStarter.style.display = 'none';
         
         const userMessage = { text, sender_id: currentUser.id };
+        console.log("Rendering user message optimistically.");
         renderMessage(userMessage);
         
         messageInput.value = '';
@@ -135,6 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let chatId = currentChatId;
         
         if (!chatId) {
+            console.log("No active chat. Creating a new one.");
             const { data, error } = await supabaseClient.from('chats').insert({ title: text.substring(0, 40) }).select().single();
             if (error) { console.error("Error creating chat:", error); return; }
             chatId = data.id;
@@ -142,8 +156,10 @@ document.addEventListener('DOMContentLoaded', () => {
             await loadChatSessions();
             document.querySelector(`.chat-list-item[data-id="${chatId}"]`)?.classList.add('active');
             subscribeToMessages(chatId);
+            console.log("New chat created with ID:", chatId);
         }
 
+        console.log("Saving message to database for chat:", chatId);
         const { error } = await supabaseClient.from('messages').insert({ chat_id: chatId, text, sender_id: currentUser.id });
         if (error) console.error("Error saving message:", error);
     };
@@ -163,9 +179,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const subscribeToMessages = (chatId) => {
         if (messageSubscription) messageSubscription.unsubscribe();
-        
+        console.log("Subscribing to real-time messages for chat:", chatId);
         messageSubscription = supabaseClient.channel(`chat:${chatId}`)
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` }, payload => {
+                console.log("Received new message from subscription:", payload.new);
                 if (payload.new.sender_id !== currentUser.id) {
                     renderMessage(payload.new);
                 }
@@ -192,16 +209,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // --- 9. THEME SWITCHER & INITIALIZATION ---
-    const applyTheme = (theme) => {
-        document.body.classList.toggle('light', theme === 'light');
-        btnTheme.textContent = theme === 'light' ? 'Light' : 'Dark';
-    };
-    btnTheme.addEventListener('click', () => {
-        const newTheme = document.body.classList.contains('light') ? 'dark' : 'light';
-        localStorage.setItem('theme', newTheme);
-        applyTheme(newTheme);
-    });
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    applyTheme(savedTheme);
+    // Theme switching is disabled for this design.
+    if (btnTheme) btnTheme.style.display = 'none';
+    
     updateUI();
 });
