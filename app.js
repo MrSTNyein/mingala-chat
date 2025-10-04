@@ -30,8 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let messageSubscription = null;
 
     // --- 4. HELPER FUNCTIONS ---
-    
-    // NEW: Safely clears chat messages without destroying the welcome screen
     const clearChatWindow = () => {
         const messages = chatWindow.querySelectorAll('.chat-row');
         messages.forEach(msg => msg.remove());
@@ -40,7 +38,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 5. AUTHENTICATION ---
     const signInWithGoogle = async () => { await supabaseClient.auth.signInWithOAuth({ provider: 'google' }); };
     const signInAsGuest = async () => { await supabaseClient.auth.signInAnonymously(); };
-    const signOut = async () => { await supabaseClient.auth.signOut(); window.location.reload(); };
+    const signOut = async () => { 
+        if (messageSubscription) messageSubscription.unsubscribe();
+        await supabaseClient.auth.signOut(); 
+        window.location.reload(); 
+    };
 
     supabaseClient.auth.onAuthStateChange(async (event, session) => {
         currentUser = session?.user || null;
@@ -91,8 +93,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const startNewChat = () => {
         currentChatId = null;
         if (messageSubscription) messageSubscription.unsubscribe();
-        clearChatWindow(); // Use safe clear function
-        chatStarter.classList.remove('hidden'); // Show welcome
+        clearChatWindow();
+        chatStarter.classList.remove('hidden');
         document.querySelectorAll('.chat-list-item.active').forEach(el => el.classList.remove('active'));
         messageInput.value = '';
         messageInput.focus();
@@ -102,8 +104,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentChatId === chatId) return;
         currentChatId = chatId;
 
-        chatStarter.classList.add('hidden'); // Hide welcome
-        clearChatWindow(); // Use safe clear function
+        chatStarter.classList.add('hidden');
+        clearChatWindow();
         
         const { data, error } = await supabaseClient.from('messages').select('*').eq('chat_id', chatId).order('created_at');
         if (error) { console.error("Error loading messages:", error); return; }
@@ -123,7 +125,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         chatStarter.classList.add('hidden');
         
-        // FIX: This renders your message instantly so you always see it.
         const userMessage = { text, sender_id: currentUser.id };
         renderMessage(userMessage);
         
@@ -138,15 +139,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (error) { console.error("Error creating chat:", error); return; }
             chatId = data.id;
             currentChatId = chatId;
-            await loadChatSessions(); // Refresh sidebar to show new chat
+            await loadChatSessions();
             document.querySelector(`.chat-list-item[data-id="${chatId}"]`)?.classList.add('active');
             subscribeToMessages(chatId);
         }
 
         const { error } = await supabaseClient.from('messages').insert({ chat_id: chatId, text, sender_id: currentUser.id });
         if (error) console.error("Error saving message:", error);
-
-        // Call to the AI function (once it's built)
     };
 
     const renderMessage = (message) => {
@@ -167,8 +166,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         messageSubscription = supabaseClient.channel(`chat:${chatId}`)
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` }, payload => {
-                // We only render messages that are NOT from the current user,
-                // because we already displayed their message instantly.
                 if (payload.new.sender_id !== currentUser.id) {
                     renderMessage(payload.new);
                 }
@@ -192,12 +189,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     messageInput.addEventListener('input', () => {
         sendButton.disabled = messageInput.value.trim().length === 0;
-        messageInput.style.height = 'auto';
-        messageInput.style.height = `${messageInput.scrollHeight}px`;
     });
     
     // --- 9. THEME SWITCHER & INITIALIZATION ---
-    // This part is unchanged
     const applyTheme = (theme) => {
         document.body.classList.toggle('light', theme === 'light');
         btnTheme.textContent = theme === 'light' ? 'Light' : 'Dark';
