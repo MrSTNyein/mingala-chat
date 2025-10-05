@@ -1,0 +1,9 @@
+# Ignore the file that contains our secret API keys.
+config.js
+.env
+
+# Ignore node dependency folder
+node_modules/
+
+# Ignore build output folder
+dist/
