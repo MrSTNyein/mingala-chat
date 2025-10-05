@@ -1,0 +1,3 @@
+# .gitignore
+# This tells Git to ignore the file containing our secret API keys.
+config.js
