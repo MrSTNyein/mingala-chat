@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Mingala — Chat App</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <link rel="stylesheet" crossorigin href="/assets/index-BLTsla-I.css">
+</head>
+<body>
+
+<div id="app-container" class="hidden">
+    <header>
+        <div class="brand">
+            <svg class="logo" width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2Z" fill="url(#paint0_linear_1_2)"/><path d="M12 7C11.4477 7 11 7.44772 11 8V11C11 11.5523 11.4477 12 12 12C12.5523 12 13 11.5523 13 11V8C13 7.44772 12.5523 7 12 7Z" fill="white"/><path d="M12 15C11.4477 15 11 15.4477 11 16C11 16.5523 11.4477 17 12 17C12.5523 17 13 16.5523 13 16C13 15.4477 12.5523 15 12 15Z" fill="white"/><defs><linearGradient id="paint0_linear_1_2" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse"><stop stop-color="#818cf8"/><stop offset="1" stop-color="#4f46e5"/></linearGradient></defs></svg>
+            <div class="title">Mingala Chat</div>
+        </div>
+        <div class="header-actions">
+            <div id="user-info" class="hidden">
+                <img id="user-pic" src="" alt="User Avatar" />
+                <span id="user-name"></span>
+            </div>
+            <button id="btn-logout" class="btn hidden">Logout</button>
+            <button id="btn-theme" class="btn">Dark</button>
+        </div>
+    </header>
+    <main class="main-full">
+        <div id="chat-window" class="chat-log"></div>
+        <div class="input-bar">
+            <textarea id="message-input" placeholder="Type a message..." rows="1" disabled></textarea>
+            <button id="send-button" class="send-btn" aria-label="Send" disabled>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z"/></svg>
+            </button>
+        </div>
+    </main>
+</div>
+
+<div id="login-overlay">
+    <div class="login-box">
+        <svg class="logo large" width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2Z" fill="url(#paint0_linear_1_4)"/><path d="M12 7C11.4477 7 11 7.44772 11 8V11C11 11.5523 11.4477 12 12 12C12.5523 12 13 11.5523 13 11V8C13 7.44772 12.5523 7 12 7Z" fill="white"/><path d="M12 15C11.4477 15 11 15.4477 11 16C11 16.5523 11.4477 17 12 17C12.5523 17 13 16.5523 13 16C13 15.4477 12.5523 15 12 15Z" fill="white"/><defs><linearGradient id="paint0_linear_1_4" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse"><stop stop-color="#818cf8"/><stop offset="1" stop-color="#4f46e5"/></linearGradient></defs></svg>
+        <h2>Welcome to Mingala</h2>
+        <p>A real-time chat app with an AI assistant.</p>
+        <button id="btn-google-login" class="btn primary">
+            <svg width="20" height="20" viewBox="0 0 512 512" fill="currentColor"><path d="M473.16,221.48l-2.26-9.59H262.46v88.22h119.34c-5.18,27.57-20.65,51-43.14,66.34v57.1h73.27C456.6,400.08,480,317.3,480,236.4C480,229.61,477,225.48,473.16,221.48Z"/><path d="M262.46,480c58.33,0,107.69-19.15,143.54-51.81l-73.27-57.1c-19.41,13.06-44.38,20.73-70.27,20.73-54,0-99.7-36.41-116-85.12H72.24v59C109.83,440.1,180.71,480,262.46,480Z"/><path d="M146.5,282.42a133.45,133.45,0,0,1,0-80.84v-59H72.24c-21.57,42.56-33.4,90-33.4,140.42s11.83,97.86,33.4,140.42Z"/><path d="M262.46,104.11c31.79,0,59.8,10.87,82.07,32.31l65-65C370.15,29.7,320.79,8,262.46,8,180.71,8,109.83,47.9,72.24,115.49l74.26,59C162.76,140.52,208.43,104.11,262.46,104.11Z"/></svg>
+            <span>Login with Google</span>
+        </button>
+    </div>
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>
