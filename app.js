@@ -1,3 +1,5 @@
+import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
+
 // app.js v3.3 - Secure Key Management & Final Polish
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -228,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
             messageSubscription = supabaseClient.channel(`chat:${chatId}`)
                 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` }, payload => {
                     if (payload.new.sender_id !== currentUser.id) {
-                         renderMessage(payload.new);
+                            renderMessage(payload.new);
                     }
                 })
                 .subscribe();
