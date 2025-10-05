@@ -198,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const { error: msgError } = await supabaseClient.from('messages').insert({ chat_id: chatId, text, sender_id: currentUser.id });
                 if (msgError) throw new Error(`Error saving message: ${msgError.message}`);
 
-                await getAndSaveBotResponse(chatId, text);
+                await getAndSaveBotResponse(chatId, userText);
             } catch (error) {
                 console.error("Failed to send message:", error);
                 messageInput.value = originalInputValue;
