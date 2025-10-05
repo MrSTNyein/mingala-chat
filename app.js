@@ -1,12 +1,14 @@
-// app.js v3.2 - Theming and Final Polish
+// app.js v3.3 - Secure Key Management & Final Polish
+
 document.addEventListener('DOMContentLoaded', () => {
     const loginMessage = document.getElementById('login-message');
     try {
         // --- 1. SUPABASE SETUP ---
-        const supabaseUrl = 'https://tzetdtcpxsqqwccymsol.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR6ZXRkdGNweHNxcXdjY3ltc29sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1Nzg5NDgsImV4cCI6MjA3NTE1NDk0OH0.uJkvrf5z76nqunfZR5sx0P3WdVAIgbqb_c-ByxMelCc';
+        // The hardcoded keys are removed. 
+        // This script now uses the SUPABASE_URL and SUPABASE_KEY variables
+        // from the untracked config.js file.
         const { createClient } = supabase;
-        const supabaseClient = createClient(supabaseUrl, supabaseKey);
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 
         console.log("App initialized.");
 
@@ -25,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const chatStarter = document.getElementById('chat-starter');
         const messageInput = document.getElementById('message-input');
         const sendButton = document.getElementById('send-button');
-        const btnTheme = document.getElementById('btn-theme'); // Get the theme button
+        const btnTheme = document.getElementById('btn-theme');
 
         // --- 3. APP STATE ---
         let currentUser = null;
@@ -33,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let messageSubscription = null;
         const BOT_ID = '00000000-0000-0000-0000-000000000000'; 
 
-        // --- 4. THEME MANAGEMENT (NEW) ---
+        // --- 4. THEME MANAGEMENT ---
         const applyTheme = (theme) => {
             if (theme === 'light') {
                 document.body.classList.add('light');
@@ -253,8 +255,15 @@ document.addEventListener('DOMContentLoaded', () => {
         loadTheme(); // Load the saved theme when the app starts
 
     } catch (err) {
-        loginMessage.textContent = `Critical Error: ${err.message}`;
-        loginMessage.style.color = '#ef4444';
-        console.error("A critical error occurred on startup:", err);
+        // A check to ensure config.js is loaded
+        if (typeof SUPABASE_URL === 'undefined' || typeof SUPABASE_KEY === 'undefined') {
+            console.error("CRITICAL ERROR: config.js is not loaded or is missing variables. Make sure it is included in index.html before app.js.");
+            loginMessage.textContent = "Configuration Error: Cannot connect to backend.";
+            loginMessage.style.color = '#ef4444';
+        } else {
+            loginMessage.textContent = `Critical Error: ${err.message}`;
+            loginMessage.style.color = '#ef4444';
+            console.error("A critical error occurred on startup:", err);
+        }
     }
 });
