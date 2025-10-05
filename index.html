@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Mingala — Chat App v3.0</title>
+    <title>Mingala — Chat App</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -12,95 +12,94 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 </head>
 <body>
-<div class="background-shapes">
-    <div class="shape shape-1"></div>
-    <div class="shape shape-2"></div>
-</div>
+    <div class="background-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+    </div>
 
-<div id="app-container" class="hidden">
-    <header>
-        <div class="brand">
-            <svg class="logo" width="36" height="36" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="50" cy="50" r="48" fill="url(#paint0_linear_header)"/>
+    <div id="app-container" class="hidden">
+        <header>
+            <div class="brand">
+                <svg class="logo" width="36" height="36" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="48" fill="url(#paint0_linear_header)"/>
+                    <path d="M67.5 52C67.5 59.4558 60.9558 66 53.5 66H46.5C39.0442 66 32.5 59.4558 32.5 52V49C32.5 41.5442 39.0442 35 46.5 35H53.5C60.9558 35 67.5 41.5442 67.5 49V52Z" fill="white" fill-opacity="0.2"/>
+                    <circle cx="39" cy="51" r="5" fill="white"/><circle cx="61" cy="51" r="5" fill="white"/>
+                    <path d="M45.5 68C45.5 67.1716 46.1716 66.5 47 66.5H53C53.8284 66.5 54.5 67.1716 54.5 68C54.5 69.933 52.933 71.5 51 71.5H49C47.067 71.5 45.5 69.933 45.5 68Z" fill="white"/>
+                    <path d="M32 36L22 26" stroke="white" stroke-width="4" stroke-linecap="round"/><path d="M68 36L78 26" stroke="white" stroke-width="4" stroke-linecap="round"/>
+                    <defs><linearGradient id="paint0_linear_header" x1="2" y1="2" x2="98" y2="98" gradientUnits="userSpaceOnUse"><stop stop-color="#10b981"/><stop offset="1" stop-color="#059669"/></linearGradient></defs>
+                </svg>
+                <div class="title">Mingala Chat</div>
+            </div>
+            <div class="header-actions">
+                <div id="user-info" class="hidden">
+                    <img id="user-pic" src="" alt="User Avatar" />
+                    <span id="user-name"></span>
+                </div>
+                <button id="btn-logout" class="btn hidden">Logout</button>
+                <button id="btn-theme" class="btn">Dark</button>
+            </div>
+        </header>
+
+        <div class="app-layout">
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <button id="btn-new-chat" class="btn primary new-chat-btn">+ New Chat</button>
+                </div>
+                <div id="chat-list" class="chat-list"></div>
+            </aside>
+
+            <main class="main-content">
+                <div id="chat-window" class="chat-log">
+                    <div id="chat-starter" style="display: none;">
+                        <div class="welcome-logo">
+                            <svg class="logo large" width="80" height="80" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="50" cy="50" r="48" fill="url(#paint0_linear_starter)"/>
+                                <path d="M67.5 52C67.5 59.4558 60.9558 66 53.5 66H46.5C39.0442 66 32.5 59.4558 32.5 52V49C32.5 41.5442 39.0442 35 46.5 35H53.5C60.9558 35 67.5 41.5442 67.5 49V52Z" fill="white" fill-opacity="0.2"/>
+                                <circle cx="39" cy="51" r="5" fill="white"/><circle cx="61" cy="51" r="5" fill="white"/>
+                                <path d="M45.5 68C45.5 67.1716 46.1716 66.5 47 66.5H53C53.8284 66.5 54.5 67.1716 54.5 68C54.5 69.933 52.933 71.5 51 71.5H49C47.067 71.5 45.5 69.933 45.5 68Z" fill="white"/>
+                                <path d="M32 36L22 26" stroke="white" stroke-width="4" stroke-linecap="round"/><path d="M68 36L78 26" stroke="white" stroke-width="4" stroke-linecap="round"/>
+                                <defs><linearGradient id="paint0_linear_starter" x1="2" y1="2" x2="98" y2="98" gradientUnits="userSpaceOnUse"><stop stop-color="#10b981"/><stop offset="1" stop-color="#059669"/></linearGradient></defs>
+                            </svg>
+                        </div>
+                        <h2>How can I help you today?</h2>
+                        <p>Select a chat from the left, or start a new conversation.</p>
+                    </div>
+                </div>
+                <div class="input-bar">
+                    <textarea id="message-input" placeholder="Type a message..." rows="1" disabled></textarea>
+                    <button id="send-button" class="send-btn" aria-label="Send" disabled>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z"/></svg>
+                    </button>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="login-overlay">
+        <div class="login-box">
+            <svg class="logo large" width="80" height="80" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="50" r="48" fill="url(#paint0_linear_login)"/>
                 <path d="M67.5 52C67.5 59.4558 60.9558 66 53.5 66H46.5C39.0442 66 32.5 59.4558 32.5 52V49C32.5 41.5442 39.0442 35 46.5 35H53.5C60.9558 35 67.5 41.5442 67.5 49V52Z" fill="white" fill-opacity="0.2"/>
                 <circle cx="39" cy="51" r="5" fill="white"/><circle cx="61" cy="51" r="5" fill="white"/>
                 <path d="M45.5 68C45.5 67.1716 46.1716 66.5 47 66.5H53C53.8284 66.5 54.5 67.1716 54.5 68C54.5 69.933 52.933 71.5 51 71.5H49C47.067 71.5 45.5 69.933 45.5 68Z" fill="white"/>
                 <path d="M32 36L22 26" stroke="white" stroke-width="4" stroke-linecap="round"/><path d="M68 36L78 26" stroke="white" stroke-width="4" stroke-linecap="round"/>
-                <defs><linearGradient id="paint0_linear_header" x1="2" y1="2" x2="98" y2="98" gradientUnits="userSpaceOnUse"><stop stop-color="#10b981"/><stop offset="1" stop-color="#059669"/></linearGradient></defs>
+                <defs><linearGradient id="paint0_linear_login" x1="2" y1="2" x2="98" y2="98" gradientUnits="userSpaceOnUse"><stop stop-color="#10b981"/><stop offset="1" stop-color="#059669"/></linearGradient></defs>
             </svg>
-            <div class="title">Mingala Chat</div>
-        </div>
-        <div class="header-actions">
-            <div id="user-info" class="hidden">
-                <img id="user-pic" src="" alt="User Avatar" />
-                <span id="user-name"></span>
-            </div>
-            <button id="btn-logout" class="btn hidden">Logout</button>
-            <button id="btn-theme" class="btn">Dark</button>
-        </div>
-    </header>
-
-    <div class="app-layout">
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <button id="btn-new-chat" class="btn primary new-chat-btn">+ New Chat</button>
-            </div>
-            <div id="chat-list" class="chat-list"></div>
-        </aside>
-
-        <main class="main-content">
-            <div id="chat-window" class="chat-log">
-                <div id="chat-starter" style="display: none;">
-                    <div class="welcome-logo">
-                        <svg class="logo large" width="80" height="80" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                             <circle cx="50" cy="50" r="48" fill="url(#paint0_linear_starter)"/>
-                            <path d="M67.5 52C67.5 59.4558 60.9558 66 53.5 66H46.5C39.0442 66 32.5 59.4558 32.5 52V49C32.5 41.5442 39.0442 35 46.5 35H53.5C60.9558 35 67.5 41.5442 67.5 49V52Z" fill="white" fill-opacity="0.2"/>
-                            <circle cx="39" cy="51" r="5" fill="white"/><circle cx="61" cy="51" r="5" fill="white"/>
-                            <path d="M45.5 68C45.5 67.1716 46.1716 66.5 47 66.5H53C53.8284 66.5 54.5 67.1716 54.5 68C54.5 69.933 52.933 71.5 51 71.5H49C47.067 71.5 45.5 69.933 45.5 68Z" fill="white"/>
-                            <path d="M32 36L22 26" stroke="white" stroke-width="4" stroke-linecap="round"/><path d="M68 36L78 26" stroke="white" stroke-width="4" stroke-linecap="round"/>
-                            <defs><linearGradient id="paint0_linear_starter" x1="2" y1="2" x2="98" y2="98" gradientUnits="userSpaceOnUse"><stop stop-color="#10b981"/><stop offset="1" stop-color="#059669"/></linearGradient></defs>
-                        </svg>
-                    </div>
-                    <h2>How can I help you today?</h2>
-                    <p>Select a chat from the left, or start a new conversation.</p>
-                </div>
-            </div>
-            <div class="input-bar">
-                <textarea id="message-input" placeholder="Type a message..." rows="1" disabled></textarea>
-                <button id="send-button" class="send-btn" aria-label="Send" disabled>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z"/></svg>
+            <h2>Welcome to Mingala</h2>
+            <p id="login-message">Your personal AI assistant. Log in to start chatting.</p>
+            <div class="login-buttons">
+                <button id="btn-google-login" class="btn primary">
+                    <svg width="20" height="20" viewBox="0 0 512 512" fill="currentColor"><path d="M473.16,221.48l-2.26-9.59H262.46v88.22h119.34c-5.18,27.57-20.65,51-43.14,66.34v57.1h73.27C456.6,400.08,480,317.3,480,236.4C480,229.61,477,225.48,473.16,221.48Z"/><path d="M262.46,480c58.33,0,107.69-19.15,143.54-51.81l-73.27-57.1c-19.41,13.06-44.38,20.73-70.27,20.73-54,0-99.7-36.41-116-85.12H72.24v59C109.83,440.1,180.71,480,262.46,480Z"/><path d="M146.5,282.42a133.45,133.45,0,0,1,0-80.84v-59H72.24c-21.57,42.56-33.4,90-33.4,140.42s11.83,97.86,33.4,140.42Z"/><path d="M262.46,104.11c31.79,0,59.8,10.87,82.07,32.31l65-65C370.15,29.7,320.79,8,262.46,8,180.71,8,109.83,47.9,72.24,115.49l74.26,59C162.76,140.52,208.43,104.11,262.46,104.11Z"/></svg>
+                    <span>Login with Google</span>
+                </button>
+                <button id="btn-guest-login" class="btn secondary">
+                    <span>Continue as Guest</span>
                 </button>
             </div>
-        </main>
-    </div>
-</div>
-
-<div id="login-overlay">
-    <div class="login-box">
-        <svg class="logo large" width="80" height="80" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="50" cy="50" r="48" fill="url(#paint0_linear_login)"/>
-            <path d="M67.5 52C67.5 59.4558 60.9558 66 53.5 66H46.5C39.0442 66 32.5 59.4558 32.5 52V49C32.5 41.5442 39.0442 35 46.5 35H53.5C60.9558 35 67.5 41.5442 67.5 49V52Z" fill="white" fill-opacity="0.2"/>
-            <circle cx="39" cy="51" r="5" fill="white"/><circle cx="61" cy="51" r="5" fill="white"/>
-            <path d="M45.5 68C45.5 67.1716 46.1716 66.5 47 66.5H53C53.8284 66.5 54.5 67.1716 54.5 68C54.5 69.933 52.933 71.5 51 71.5H49C47.067 71.5 45.5 69.933 45.5 68Z" fill="white"/>
-            <path d="M32 36L22 26" stroke="white" stroke-width="4" stroke-linecap="round"/><path d="M68 36L78 26" stroke="white" stroke-width="4" stroke-linecap="round"/>
-            <defs><linearGradient id="paint0_linear_login" x1="2" y1="2" x2="98" y2="98" gradientUnits="userSpaceOnUse"><stop stop-color="#10b981"/><stop offset="1" stop-color="#059669"/></linearGradient></defs>
-        </svg>
-        <h2>Welcome to Mingala</h2>
-        <p id="login-message">Your personal AI assistant. Log in to start chatting.</p>
-        <div class="login-buttons">
-            <button id="btn-google-login" class="btn primary">
-                <svg width="20" height="20" viewBox="0 0 512 512" fill="currentColor"><path d="M473.16,221.48l-2.26-9.59H262.46v88.22h119.34c-5.18,27.57-20.65,51-43.14,66.34v57.1h73.27C456.6,400.08,480,317.3,480,236.4C480,229.61,477,225.48,473.16,221.48Z"/><path d="M262.46,480c58.33,0,107.69-19.15,143.54-51.81l-73.27-57.1c-19.41,13.06-44.38,20.73-70.27,20.73-54,0-99.7-36.41-116-85.12H72.24v59C109.83,440.1,180.71,480,262.46,480Z"/><path d="M146.5,282.42a133.45,133.45,0,0,1,0-80.84v-59H72.24c-21.57,42.56-33.4,90-33.4,140.42s11.83,97.86,33.4,140.42Z"/><path d="M262.46,104.11c31.79,0,59.8,10.87,82.07,32.31l65-65C370.15,29.7,320.79,8,262.46,8,180.71,8,109.83,47.9,72.24,115.49l74.26,59C162.76,140.52,208.43,104.11,262.46,104.11Z"/></svg>
-                <span>Login with Google</span>
-            </button>
-            <button id="btn-guest-login" class="btn secondary">
-                <span>Continue as Guest</span>
-            </button>
         </div>
     </div>
-</div>
 
-<script src="config.js"></script>
-<script src="app.js" type="module"></script>
-
+    <script src="config.js"></script>
+    <script src="app.js" type="module"></script>
 </body>
 </html>
