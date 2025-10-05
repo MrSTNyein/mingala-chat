@@ -1,7 +1,5 @@
-@'
 # Ignore the file that contains our secret API keys.
 config.js
 
 # Ignore node dependency folder
 node_modules/
-'@ | Set-Content -Path .gitignore
