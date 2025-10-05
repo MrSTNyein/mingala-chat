@@ -4,3 +4,6 @@ config.js
 
 # Ignore node dependency folder
 node_modules/
+
+# Ignore build output folder
+dist/
